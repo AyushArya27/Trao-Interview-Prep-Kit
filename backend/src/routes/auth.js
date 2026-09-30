@@ -34,15 +34,24 @@ router.post('/login', async (req, res) => {
 });
 
 router.post('/logout', (req, res) => {
-  req.session.destroy();
-  res.json({ success: true });
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Could not log out' });
+    }
+    res.clearCookie('connect.sid');
+    res.json({ success: true });
+  });
 });
 
 router.get('/me', async (req, res) => {
-  if (!req.session.userId) return res.status(401).json({ error: 'Not authenticated' });
-  const user = await User.findById(req.session.userId);
-  if (!user) return res.status(401).json({ error: 'User not found' });
-  res.json({ id: user._id, email: user.email });
+  try {
+    if (!req.session.userId) return res.status(401).json({ error: 'Not authenticated' });
+    const user = await User.findById(req.session.userId);
+    if (!user) return res.status(401).json({ error: 'User not found' });
+    res.json({ id: user._id, email: user.email });
+  } catch (e) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 module.exports = router;
